@@ -1,0 +1,165 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>E2EE 加密和解密</title>
+    <script src="js/md5/md5.js"></script>
+    <script src="js/e2ee/System.js"></script>
+    <script src="js/e2ee/System.IO.js"></script>
+    <script src="js/e2ee/System.Text.js"></script>
+    <script src="js/e2ee/System.Convert.js"></script>
+    <script src="js/e2ee/System.BitConverter.js"></script>
+    <script src="js/e2ee/System.BigInt.js"></script>
+    <script src="js/e2ee/System.Security.Cryptography.SHA1.js"></script>
+    <script src="js/e2ee/System.Security.Cryptography.js"></script>
+    <script src="js/e2ee/System.Security.Cryptography.RSA.js"></script>
+    <script src="js/e2ee/System.Security.Cryptography.HMACSHA1.js"></script>
+    <script src="js/e2ee/System.Security.Cryptography.RijndaelManaged.js"></script>
+    <script src="js/e2ee.js"></script>
+    <style>
+        #con {
+            width: 1000px;
+            margin: 30px auto;
+            padding: 20px;
+        }
+        .pb20 {
+            margin-bottom: 20px;
+        }
+        #title {
+            font-size: 22px;
+            font-weight: bold;
+        }
+        #keyInput {
+            width: 400px;
+        }
+        textarea {
+            width: 400px;
+        }
+    </style>
+</head>
+<body>
+<div id="con">
+    <div id="title" class="pb20">RSA 加解密示例演示(以base64的形式输出)：</div>
+    <table border="0" cellpadding="0" cellspacing="4">
+        <tbody>
+        <tr>
+            <td>报文原文：</td>
+            <td><textarea name="originMsg" id="originMsg" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td><br /></td>
+        </tr>
+        <tr>
+            <td>AES的密钥：</td>
+            <td><textarea name="aesPwd" id="aesPwd" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td><br /><input id="createAesPwd" value="点击生成随机密钥" type="button" /></td>
+        </tr>
+        <tr>
+            <td>使用AES加密原报文：</td>
+            <td><textarea name="aesEncryptMsg" id="aesEncryptMsg" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td><br /><input id="encryptAesMsg" value="使用AES加密报文" type="button" /></td>
+        </tr>
+        <tr>
+            <td>使用AES解密报文：</td>
+            <td><textarea name="aesDecryptMsg" id="aesDecryptMsg" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td><br /><input id="decryptAesMsg" value="使用AES解密报文" type="button" /></td>
+        </tr>
+        <tr>
+            <td>RSA Key:</td>
+            <td><textarea name="KeyTextBox" id="KeyTextBox" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td><br /><input id="NewKeyButton" value="New Key" type="button" /></td>
+        </tr>
+        <tr>
+            <td></td>
+            <td>Padding: Direct Encryption (PKCS#1 v1.5)</td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>数据，即AES的密钥:</td>
+            <td><input name="DataTextBox" value="abcdef_01234" id="DataTextBox" style="width: 500px;" type="text" /></td>
+            <td></td>
+        </tr>
+        <tr>
+            <td>使用rsa加密aes密钥：</td>
+            <td><textarea name="EncryptedTextBox" id="EncryptedTextBox" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td><input name="EncryptButton" value="Encrypt" id="EncryptButton" type="button" /></td>
+        </tr>
+        <tr>
+            <td>使用rsa解密：</td>
+            <td><textarea name="DecryptedTextBox" id="DecryptedTextBox" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td valign="bottom"><input name="DecryptButton" value="Decrypt" id="DecryptButton" type="button" /></td>
+        </tr>
+        <tr>
+            <td>最后生成要发送的报文</td>
+            <td><textarea name="finalyOriginMsg" id="finalyOriginMsg" style="width: 500px;" cols="128" rows="3"></textarea></td>
+            <td><br /><input id="createFinalyMsg" value="生成最后要发送的报文" type="button" /></td>
+        </tr>
+        </tbody>
+    </table>
+    <br />
+
+    <h3>=================接下来是解密过程=================</h3>
+    <div>注: 这边的要使用的RSA的key就是上面的值</div>
+    <table border="0" cellpadding="0" cellspacing="4">
+        <tbody>
+        <tr>
+            <td>发过来的要解密的数据报文</td>
+            <td><textarea name="dataMsg" id="dataMsg" style="width: 500px;" cols="128" rows="3" placeholder="请输入加密报文"></textarea></td>
+            <td><input id="decryptDataMsg" value="开始解密" type="button" /></td>
+        </tr>
+        <tr>
+            <td>解密出来为：</td>
+            <td><textarea name="finishData" id="finishData" style="width: 500px;" cols="128" rows="3"></textarea></td>
+        </tr>
+        </tbody>
+    </table>
+</div>
+</body>
+<script>
+    var $ = function(id){
+        return document.getElementById(id);
+    };
+    $("createAesPwd").onclick = function(){
+        var aesPwd =  window.aesUtil.createAESKey();
+        $("aesPwd").value = aesPwd;
+        $("DataTextBox").value = aesPwd;
+    };
+    // 使用 aes 加密报文
+    $("encryptAesMsg").onclick = function(){
+        var password = $("aesPwd").value;
+        var data = $("originMsg").value;
+        // 加密，并用base64的形式输出
+        var encrypted = window.aesUtil.encryptToBase64(password, data);
+        $("aesEncryptMsg").value = encrypted;
+    };
+    // 使用 aes 解密密文
+    $("decryptAesMsg").onclick = function(){
+        var password = $("aesPwd").value;
+        var encrypted = $("aesEncryptMsg").value;
+        var decrypted = window.aesUtil.decryptFromBase64(password, encrypted);
+        $("aesDecryptMsg").value = decrypted;
+    };
+    // 生成 rsa key
+    $("NewKeyButton").onclick = function(){
+        $("KeyTextBox").value = window.rsaUtil.setNewRsaKey();
+    };
+    $("KeyTextBox").oninput = function(){
+        $("KeyTextBox").value.trim() && window.rsaUtil.setRsaKeyValue($("KeyTextBox").value.trim());
+    };
+    // 使用 rsa 加密 aes 密钥
+    $("EncryptButton").onclick = function(){
+        $("EncryptedTextBox").value = window.rsaUtil.encryptToBase64($("DataTextBox").value.trim());
+    };
+    // 使用 rsa 解密
+    $("DecryptButton").onclick = function(){
+        $("DecryptedTextBox").value = window.rsaUtil.decryptToBase64($("EncryptedTextBox").value.trim());
+    };
+    // 生成最后要发出去的报文
+    $("createFinalyMsg").onclick = function(){
+        // 这边的第二个参数，只要publishKey就行了
+        $("finalyOriginMsg").value = window.e2eeUtil.encrypt($("originMsg").value,$("KeyTextBox").value,$("aesPwd").value);
+    };
+    // e2ee 解密
+    $("decryptDataMsg").onclick = function(){
+        $("finishData").value = window.e2eeUtil.decrypt($("dataMsg").value);
+    };
+</script>
+</html>
